@@ -12,6 +12,7 @@ WeatherStack Projesi, belirli şehirlerin hava durumu bilgilerini sağlayan, Red
 - [Önbellekleme ve Veritabanı](#önbellekleme-ve-veritabanı)
 - [Loglama](#loglama)
 - [Hata Yönetimi](#hata-yönetimi)
+- [Testler](#testler)
 - [Örnek Kullanım](#örnek-kullanım)
 
 ## Kullanılan Teknolojiler
@@ -23,6 +24,7 @@ WeatherStack Projesi, belirli şehirlerin hava durumu bilgilerini sağlayan, Red
 - **Dapper**: MySQL ile veri etkileşimi
 - **Docker Compose**: Redis ve MySQL için konteyner yönetimi
 - **HTTP Client**: Hava durumu API çağrıları
+- **Moq** ve **xUnit**: Unit testler için kullanılan frameworkler
 
 ## Kurulum Adımları
 
@@ -119,10 +121,22 @@ Dapper kullanılarak favori şehirlerin kalıcı olarak saklandığı MySQL veri
 - **CreateFavoriteCitiesAsync**: Eğer yoksa favori şehirler listesine ekler.
 - **DeleteFavoriteCitiesAsync**: Belirtilen ID’li şehri silinmiş olarak işaretler.
 
+## Loglama
+
+Proje, **Serilog** kullanılarak loglanmaktadır. Log dosya yolu, `appsettings.json` dosyasından okunur. Önemli bilgiler ve hata mesajları loglanarak sistemin kolay izlenebilir olması sağlanır.
 
 ## Hata Yönetimi
 
 Proje, `CoreNotificationException` gibi özel istisnalar kullanarak iş kurallarıyla ilgili hataları yönetir. Örneğin, eğer şehir zaten favorilerde mevcutsa bir hata döner.
+
+## Testler
+
+Proje, `xUnit` ve `Moq` kullanılarak test edilmiştir. Aşağıda birkaç test açıklaması bulunmaktadır:
+
+- **GetWeather_ShouldReturnSuccess_WhenWeatherDataExists**: Hava durumu verisi mevcut olduğunda başarıyla dönülmesi beklenir.
+- **GetWeather_ShouldReturnNoData_WhenWeatherDataIsNull**: Hava durumu verisi bulunamadığında uygun mesaj ile dönülmesi beklenir.
+- **CreateFavoriteCities_ShouldReturnSuccess_WhenCityIsAdded**: Şehir başarıyla eklendiğinde doğrulama yapılır.
+- **CreateFavoriteCities_ShouldReturnInfo_WhenCityAlreadyExists**: Zaten mevcut olan bir şehir eklenmeye çalışıldığında hata mesajı dönülmesi beklenir.
 
 ## Örnek Kullanım
 
@@ -151,6 +165,3 @@ Proje, `CoreNotificationException` gibi özel istisnalar kullanarak iş kurallar
        "alerts": "no"
    }
    ```
-
----
-
