@@ -26,11 +26,13 @@ public class WeatherServiceTests
             _loggerMock.Object
         );
     }
-
+    /// <summary>
+    /// Hava durumu bilgisi bulunduğunda başarılı yanıt döndüğünü doğrular.
+    /// Verilen şehir için <see cref="CoreResponseCode.Success"/> ve doğru sıcaklık verisini bekler.
+    /// </summary>
     [Fact]
     public async Task GetWeather_ShouldReturnSuccess_WhenWeatherDataExists()
     {
-        // Arrange
         var apiRequest = new WeatherApiRequest { q = "Istanbul" };
         var expectedWeather = new WeatherBaseModel { Temperature = 15.4, City = "Istanbul", Condition = "Cloudy" };
 
@@ -38,15 +40,12 @@ public class WeatherServiceTests
             .Setup(x => x.GetWeatherApiInfoAsync(apiRequest))
             .ReturnsAsync(expectedWeather);
 
-        // Act
         var result = await _controller.GetWeather(apiRequest);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(CoreResponseCode.Success, result.ResponseCode);
         Assert.Equal(expectedWeather.Temperature, result.Data.Temperature);
 
-        // Log doğrulama: başarılı veri döndüğünde log kontrolü
         _loggerMock.Verify(
             x => x.Log(
                 LogLevel.Information,
@@ -57,6 +56,10 @@ public class WeatherServiceTests
             Times.Once);
     }
 
+    /// <summary>
+    /// Hava durumu bilgisi bulunamadığında doğru yanıt ve uyarı mesajı döndüğünü doğrular.
+    /// Verilen şehir için <see cref="CoreResponseCode.NoData"/> ve uyarı log mesajını bekler.
+    /// </summary>
     [Fact]
     public async Task GetWeather_ShouldReturnNoData_WhenWeatherDataIsNull()
     {
