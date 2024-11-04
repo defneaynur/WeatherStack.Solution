@@ -1,0 +1,6 @@
+@WeatherStack.Api_HostAddress = http://localhost:5177
+
+GET {{WeatherStack.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

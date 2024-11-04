@@ -1,0 +1,332 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Hava Durumu";
+
+      var cities = new Dictionary<string, string>
+        {
+            { "İstanbul", "Istanbul" },
+            { "Ankara", "Ankara" },
+            { "İzmir", "Izmir" },
+            { "Antalya", "Antalya" },
+            { "Bursa", "Bursa" },
+            { "Konya", "Konya" },
+            { "Eskişehir", "Eskisehir" },
+            { "Gaziantep", "Gaziantep" },
+            { "Mersin", "Mersin" }
+        };
+}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+    }
+
+    h3 {
+        color: #004466;
+        font-size: 1.8em;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .container {
+        max-width: 1000px; 
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-group {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .dropdown-menu {
+        max-height: 200px;
+        overflow-y: auto;
+        min-width: 200px;
+        max-width: 300px;
+    }
+
+    .weather-card {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: #e6f7ff;
+        border-left: 5px solid #0099cc;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    table {
+        width: 100%; 
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th, td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 12px; 
+    }
+
+    th {
+        background-color: #0099cc !important;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    td {
+        text-align: center; 
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+    .pagination button {
+        background-color: #0099cc;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        margin: 2px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .pagination button:hover {
+        background-color: #007299;
+    }
+
+    .pagination button.active {
+        background-color: #005f73;
+        color: #fff;
+    }
+
+    #errorMessage {
+        color: #cc0000;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container">
+    <h3>Hava Durumu</h3>
+      @await Html.PartialAsync("_Loading") 
+
+    <div class="input-group">
+        <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Şehir Seç
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            @foreach (var city in cities)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="@city.Value" id="city@city.Value">
+                    <label class="form-check-label" for="city@city.Value">@city.Key</label>
+                </div>
+            }
+        </div>
+    </div>
+        <div class="input-group-append">
+            <button id="getWeatherBtn" class="btn btn-primary">Hava Durumu Getir</button>
+            <button id="addToFavoritesBtn" class="btn btn-secondary" disabled>Favorilere Ekle</button>
+        </div>
+    </div>
+
+    <div id="errorMessage" class="text-danger"></div>
+
+    <div id="weatherInfo" class="weather-card">
+        <table id="weatherTable" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Şehir</th>
+                    <th>Sıcaklık (°C)</th>
+                    <th>Hava Durumu</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            let weatherDataForFavorites = [];
+            const rowsPerPage = 5;
+            let currentPage = 1;
+
+
+            $('#getWeatherBtn').click(function () {
+                const selectedCities = [];
+                $('input[type=checkbox]:checked').each(function () {
+                    selectedCities.push($(this).val());
+                });
+
+                if (selectedCities.length === 0) {
+                    $('#errorMessage').text('Lütfen bir veya daha fazla şehir seçiniz.');
+                    $('#weatherTable').hide();
+                    $('#addToFavoritesBtn').prop('disabled', true);
+                    return;
+                }
+
+                $('#errorMessage').text('');
+                const weatherTableBody = $('#weatherTable tbody');
+                weatherTableBody.empty();
+                weatherDataForFavorites = [];
+
+                showLoading(); 
+
+                const weatherPromises = selectedCities.map(city => getWeatherData(city));
+
+                Promise.all(weatherPromises)
+                    .then(responses => {
+                        hideLoading();
+                        responses.forEach((response, index) => {
+                            if (response.responseCode === 1) {
+                                const cityData = {
+                                    city: selectedCities[index],
+                                    temperature: response.data.temperature,
+                                    condition: response.data.condition
+                                };
+                                weatherDataForFavorites.push(cityData);
+                            } else {
+                                $('#errorMessage').append(`<div>${response.message}</div>`);
+                            }
+                        });
+                        if (weatherDataForFavorites.length > 0) {
+                            displayTableData();
+                            updatePagination();
+                            $('#weatherTable').show();
+                            $('#addToFavoritesBtn').prop('disabled', false);
+                        } else {
+                            $('#weatherTable').hide();
+                            $('#addToFavoritesBtn').prop('disabled', true);
+                        }
+                    })
+                    .catch(() => {
+                        hideLoading(); 
+                        $('#errorMessage').text('API isteği başarısız oldu.');
+                        $('#weatherTable').hide();
+                        $('#addToFavoritesBtn').prop('disabled', true);
+                    });
+            });
+
+            $('#addToFavoritesBtn').click(function () {
+                if (weatherDataForFavorites.length === 0) {
+                    alert('Lütfen önce şehirlerin hava durumu verilerini alınız.');
+                    return;
+                }
+
+                const promises = weatherDataForFavorites.map(cityWeather => {
+                    const cityData = {
+                        CityName: cityWeather.city,
+                        Temperature: cityWeather.temperature,
+                        Condition: cityWeather.condition,
+                        LastUpdated: new Date()
+                    };
+                    return $.ajax({
+                        url: 'https://localhost:7207/api/FavoriteCityService',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(cityData)
+                    });
+                });
+
+                Promise.all(promises)
+                    .then(responses => {
+                        let hasErrors = false;
+                        responses.forEach(response => {
+                            if (response.responseCode !== 1) {
+                                hasErrors = true;
+                                $('#errorMessage').text(response.message);
+                            }
+                        });
+
+                        if (!hasErrors) {
+                            alert('Favori şehirler başarıyla eklendi!');
+                        }
+                    })
+                    .catch(() => {
+                        $('#errorMessage').text('Favori şehirleri ekleme isteği başarısız oldu.');
+                    });
+            });
+
+
+            function getWeatherData(cityName) {
+                const apiRequest = {
+                    key: "",
+                    q: cityName,
+                    days: 1,
+                    aqi: 'no',
+                    alerts: 'no'
+                };
+
+                return $.ajax({
+                    url: 'https://localhost:7207/api/WeatherService',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(apiRequest)
+                });
+            }
+
+            function displayTableData() {
+                const weatherTableBody = $('#weatherTable tbody');
+                weatherTableBody.empty();
+
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageData = weatherDataForFavorites.slice(start, end);
+
+                pageData.forEach(cityData => {
+                    weatherTableBody.append(`
+                        <tr>
+                            <td>${cityData.city}</td>
+                            <td>${cityData.temperature} °C</td>
+                            <td>${cityData.condition}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function updatePagination() {
+                const pageCount = Math.ceil(weatherDataForFavorites.length / rowsPerPage);
+                $('#pagination').empty();
+
+                for (let i = 1; i <= pageCount; i++) {
+                    $('#pagination').append(`
+                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                    `);
+                }
+            }
+
+            function showLoading() {
+                $("#loadingSpinner").show();
+            }
+
+            function hideLoading() {
+                $("#loadingSpinner").hide();
+            }
+
+            window.changePage = function (page) {
+                currentPage = page;
+                displayTableData();
+                updatePagination();
+            };
+        });
+    </script>
+}

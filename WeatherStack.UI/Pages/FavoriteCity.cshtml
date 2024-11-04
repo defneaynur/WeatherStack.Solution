@@ -1,0 +1,259 @@
+﻿@page
+@model FavoriteCityModel
+@{
+    ViewData["Title"] = "Favori Şehirler";
+}
+
+<h3 class="page-title">@ViewData["Title"]</h3>
+
+<style>
+    /* Genel Sayfa Stilleri */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .page-title {
+        font-size: 2em;
+        color: #004466;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    h4 {
+        color: #007acc;
+        font-size: 1.5em;
+        margin-top: 20px;
+    }
+
+    /* Favori Şehirler Listesi */
+    #favoriteCitiesList {
+        padding: 0;
+        margin-bottom: 10px;
+    }
+
+        #favoriteCitiesList li {
+            list-style: none;
+            padding: 10px 15px;
+            background-color: #e6f7ff;
+            margin-top: 10px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+    /* Silme Butonu */
+    .delete-btn {
+        background-color: #ff4d4d;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+        .delete-btn:hover {
+            background-color: #cc0000;
+        }
+
+    /* Sayfalandırma */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+    }
+
+        .pagination button {
+            background-color: #0099cc;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+            .pagination button:hover {
+                background-color: #007299;
+            }
+
+            .pagination button.active {
+                background-color: #005f73;
+                color: #fff;
+            }
+
+    /* İstatistikler Bölümü */
+    .stats {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #f0faff;
+        border-left: 5px solid #0099cc;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        text-align: left;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        .stats h5 {
+            color: #004466;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .stats p {
+            font-size: 1em;
+            color: #333;
+            line-height: 1.5;
+            margin: 8px 0;
+        }
+
+    /* Hata Mesajı */
+    #errorMessage {
+        color: #cc0000;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="container">
+    <div id="errorMessage" class="text-danger"></div>
+
+    <div>
+        <ul id="favoriteCitiesList" class="list-group"></ul>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+
+    <div class="stats">
+        <h5>İstatistikler</h5>
+        <p><strong>Ortalama Sıcaklık:</strong> <span id="averageTemperature">-</span> °C</p>
+        <p><strong>En Sıcak Şehir:</strong> <span id="hottestCity">-</span></p>
+        <p><strong>En Soğuk Şehir:</strong> <span id="coldestCity">-</span></p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const citiesPerPage = 3;
+            let favoriteCities = [];
+            let currentPage = 1;
+
+            getFavoriteCities();
+
+            function getFavoriteCities() {
+                favoriteCities = [];
+                $('#favoriteCitiesList').empty();
+
+                $.ajax({
+                    url: 'https://localhost:7207/api/FavoriteCityService',
+                    type: 'GET',
+                    contentType: 'application/json'
+                }).then(response => {
+                    if (response.responseCode === 1) {
+                        favoriteCities = response.data;
+                        displayCities(currentPage);
+                        updatePagination();
+                        updateStatistics();
+                    } else {
+                        $('#errorMessage').append(`<div>${response.message}</div>`);
+                    }
+                }).catch(() => {
+                    $('#errorMessage').text('Favori şehirleri alma isteği başarısız oldu.');
+                });
+            }
+
+            function displayCities(page) {
+                $('#favoriteCitiesList').empty();
+
+                const start = (page - 1) * citiesPerPage;
+                const end = start + citiesPerPage;
+                const citiesToDisplay = favoriteCities.slice(start, end);
+
+                citiesToDisplay.forEach(city => {
+                    $('#favoriteCitiesList').append(`
+                                <li class="list-group-item">
+                                    ${city.cityName} - ${city.temperature} °C
+                                    <button class="delete-btn" onclick="deleteFavoriteCity('${city.id}')">Sil</button>
+                                </li>
+                            `);
+                });
+            }
+
+            function updatePagination() {
+                const pageCount = Math.ceil(favoriteCities.length / citiesPerPage);
+                $('#pagination').empty();
+
+                for (let i = 1; i <= pageCount; i++) {
+                    $('#pagination').append(`
+                                <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                            `);
+                }
+            }
+
+            window.changePage = function (page) {
+                currentPage = page;
+                displayCities(page);
+                updatePagination();
+            };
+
+            function deleteFavoriteCity(cityId) {
+                $.ajax({
+                    url: `https://localhost:7207/api/FavoriteCityService/delete/${cityId}`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    success: response => {
+                        if (response.responseCode === 1) {
+                            getFavoriteCities();
+                            alert(response.message);
+                        } else {
+                            $('#errorMessage').append(`<div>${response.message}</div>`);
+                        }
+                    },
+                    error: () => {
+                        $('#errorMessage').text('Favori şehri silme isteği başarısız oldu.');
+                    }
+                });
+            }
+
+            window.deleteFavoriteCity = deleteFavoriteCity;
+
+            function updateStatistics() {
+                if (favoriteCities.length === 0) {
+                    $('#averageTemperature').text('-');
+                    $('#hottestCity').text('-');
+                    $('#coldestCity').text('-');
+                    return;
+                }
+
+                const totalTemperature = favoriteCities.reduce((sum, city) => sum + city.temperature, 0);
+                const averageTemperature = (totalTemperature / favoriteCities.length).toFixed(1);
+                $('#averageTemperature').text(averageTemperature);
+
+                const hottestCity = favoriteCities.reduce((max, city) => city.temperature > max.temperature ? city : max);
+                const coldestCity = favoriteCities.reduce((min, city) => city.temperature < min.temperature ? city : min);
+
+                $('#hottestCity').text(`${hottestCity.cityName} (${hottestCity.temperature} °C)`);
+                $('#coldestCity').text(`${coldestCity.cityName} (${coldestCity.temperature} °C)`);
+            }
+        });
+    </script>
+}
