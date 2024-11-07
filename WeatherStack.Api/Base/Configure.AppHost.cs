@@ -29,7 +29,7 @@ namespace WeatherStack.Api.Base
             #endregion
             var connectionString = builder.Configuration.GetSection("ConfigProject:ApiInformations:ConnectionStrings:DefaultConnection").Value;
 
-            Log.Logger = new LoggerConfiguration()
+            Log.Logger = new LoggerConfiguration() 
               .MinimumLevel.Information()
               .WriteTo.Console()
               .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
