@@ -30,7 +30,7 @@ namespace WeatherStack.Api.Base
             var connectionString = builder.Configuration.GetSection("ConfigProject:ApiInformations:ConnectionStrings:DefaultConnection").Value;
 
             Log.Logger = new LoggerConfiguration() 
-              .MinimumLevel.Information()
+              .MinimumLevel.Information() 
               .WriteTo.Console()
               .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
               .WriteTo.MySQL(connectionString: connectionString, tableName: "Logs")
