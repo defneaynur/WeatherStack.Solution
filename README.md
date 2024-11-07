@@ -123,7 +123,7 @@ Dapper kullanılarak favori şehirlerin kalıcı olarak saklandığı MySQL veri
 
 ## Loglama
 
-Proje, **Serilog** kullanılarak loglanmaktadır. Log dosya yolu, `appsettings.json` dosyasından okunur. Önemli bilgiler ve hata mesajları loglanarak sistemin kolay izlenebilir olması sağlanır.
+Proje, **Serilog** kullanılarak loglanmaktadır. Önemli bilgiler ve hata mesajları loglanarak sistemin kolay izlenebilir olması sağlanır.
 
 ## Hata Yönetimi
 
