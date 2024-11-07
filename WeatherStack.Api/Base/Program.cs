@@ -12,7 +12,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Inventory Management System",
+        Title = "WeatherStack System",
         Version = "v1"
     });
 });
@@ -26,7 +26,7 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/InventoryManagement/Error");
+    app.UseExceptionHandler("/WeatherStack/Error");
     app.UseHsts();
 }
 
